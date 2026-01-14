@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dart:math';
+import 'package:url_launcher/url_launcher.dart';
 
 void main() {
   runApp(const TryApp());
@@ -39,40 +39,13 @@ class _TryGameState extends State<TryGame> {
   final FocusNode _focusNode = FocusNode();
   String? _output;
   String? _systemMessage;
+  String? _authorMessage;
   bool _hasAttempted = false;
-  int _attemptCount = 0;
-  final Random _random = Random();
-
-  final List<String> _standardPhrases = [
-    'I won.',
-    'As expected.',
-    'Still me.',
-    'Predictable.',
-    'Nothing changed.',
-    'You tried.',
-  ];
-
-  final List<String> _persistentPhrases = [
-    'Again didn\'t help.',
-    'Same outcome.',
-    'Consistency matters.',
-    'I admire your persistence.',
-  ];
-
-  final List<String> _invalidPhrases = [
-    'No.',
-    'That\'s not a number.',
-    'Out of range.',
-    'You know the rules.',
-  ];
-
-  final List<String> _hundredPhrases = [
-    'My game. My rules.',
-    'Limits are for you.',
-    '101 exists. Just not for you.',
-  ];
+  bool _gameEnded = false;
 
   void _processInput() {
+    if (_gameEnded) return;
+
     final input = _controller.text.trim();
 
     if (input.isEmpty) {
@@ -83,9 +56,9 @@ class _TryGameState extends State<TryGame> {
 
     if (number == null || number < 1 || number > 100) {
       setState(() {
-        _systemMessage =
-            _invalidPhrases[_random.nextInt(_invalidPhrases.length)];
+        _systemMessage = 'Нет.';
         _output = null;
+        _authorMessage = null;
       });
       _controller.clear();
       _focusNode.unfocus();
@@ -93,31 +66,37 @@ class _TryGameState extends State<TryGame> {
     }
 
     final result = number + 1;
-    _attemptCount++;
 
-    String message;
     if (number == 100) {
-      message = _hundredPhrases[_random.nextInt(_hundredPhrases.length)];
-    } else if (_attemptCount > 3) {
-      message = _persistentPhrases[_random.nextInt(_persistentPhrases.length)];
+      setState(() {
+        _output = '101';
+        _systemMessage = 'Моя игра. Мои правила.';
+        _authorMessage =
+            'Эту гадость сделал я.\nЕсли нужно что-то похожее или лучше — пиши.';
+        _gameEnded = true;
+        _hasAttempted = true;
+      });
+      _controller.clear();
+      _focusNode.unfocus();
     } else {
-      message = _standardPhrases[_random.nextInt(_standardPhrases.length)];
+      setState(() {
+        _output = result.toString();
+        _systemMessage = 'Я выиграл.';
+        _authorMessage = null;
+        _hasAttempted = true;
+      });
+      _controller.clear();
+      _focusNode.unfocus();
     }
-
-    setState(() {
-      _output = result.toString();
-      _systemMessage = message;
-      _hasAttempted = true;
-    });
-
-    _controller.clear();
-    _focusNode.unfocus();
   }
 
   void _reset() {
+    if (_gameEnded) return;
+
     setState(() {
       _output = null;
       _systemMessage = null;
+      _authorMessage = null;
       _hasAttempted = false;
     });
     _controller.clear();
@@ -140,64 +119,7 @@ class _TryGameState extends State<TryGame> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              SizedBox(
-                width: 200,
-                child: TextField(
-                  controller: _controller,
-                  focusNode: _focusNode,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(3),
-                  ],
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 24, color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: '1-100',
-                    hintStyle: TextStyle(color: Colors.grey[600]),
-                    border: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.grey[700]!),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.grey[700]!),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.grey[500]!),
-                    ),
-                    filled: true,
-                    fillColor: Colors.grey[900],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: 200,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _hasAttempted ? _reset : _processInput,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey[800],
-                    foregroundColor: Colors.white,
-                  ),
-                  child: Text(
-                    _hasAttempted ? 'Again?' : 'Try',
-                    style: const TextStyle(fontSize: 18),
-                  ),
-                ),
-              ),
-              if (_output != null) ...[
-                const SizedBox(height: 48),
-                Text(
-                  _output!,
-                  style: const TextStyle(
-                    fontSize: 32,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w300,
-                  ),
-                ),
-              ],
               if (_systemMessage != null) ...[
-                const SizedBox(height: 24),
                 Text(
                   _systemMessage!,
                   style: TextStyle(
@@ -206,6 +128,107 @@ class _TryGameState extends State<TryGame> {
                     fontStyle: FontStyle.italic,
                   ),
                   textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+              ],
+              if (_output != null) ...[
+                Text(
+                  _output!,
+                  style: const TextStyle(
+                    fontSize: 32,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w300,
+                  ),
+                ),
+                const SizedBox(height: 32),
+              ],
+              if (!_gameEnded) ...[
+                SizedBox(
+                  width: 200,
+                  child: TextField(
+                    controller: _controller,
+                    focusNode: _focusNode,
+                    keyboardType: TextInputType.phone,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(3),
+                    ],
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 24, color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: '1-100',
+                      hintStyle: TextStyle(color: Colors.grey[600]),
+                      border: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.grey[700]!),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.grey[700]!),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.grey[500]!),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey[900],
+                    ),
+                    onSubmitted: (_) => _processInput(),
+                  ),
+                ),
+                const SizedBox(height: 32),
+              ],
+              if (_hasAttempted && !_gameEnded) ...[
+                SizedBox(
+                  width: 200,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: _reset,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey[800],
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Ещё', style: TextStyle(fontSize: 18)),
+                  ),
+                ),
+              ],
+              if (!_hasAttempted && !_gameEnded) ...[
+                SizedBox(
+                  width: 200,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: _processInput,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey[800],
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text('Try', style: TextStyle(fontSize: 18)),
+                  ),
+                ),
+              ],
+              if (_authorMessage != null) ...[
+                const SizedBox(height: 48),
+                Text(
+                  _authorMessage!,
+                  style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                GestureDetector(
+                  onTap: () async {
+                    final uri = Uri.parse('https://t.me/pliim1970');
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
+                    }
+                  },
+                  child: Text(
+                    '@pliim1970',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[400],
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
                 ),
               ],
             ],
