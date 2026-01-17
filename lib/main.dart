@@ -47,7 +47,7 @@ class _GameScreenState extends State<GameScreen> {
     if (input.isEmpty) return;
 
     final number = int.tryParse(input);
-    if (number == null || number < 1) {
+    if (number == null || number < 1 || number > 100) {
       _showError('Введите число от 1 до 100');
       return;
     }
@@ -57,10 +57,6 @@ class _GameScreenState extends State<GameScreen> {
         _result = 101;
         _message = 'Я выиграл! Моя игра, мои правила! Гуляй, Вася.';
         _gameFinished = true;
-        _hasResult = true;
-      } else if (number <= 99) {
-        _result = number + 1;
-        _message = 'Я выиграл!';
         _hasResult = true;
       } else {
         _result = number + 1;
