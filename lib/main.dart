@@ -47,19 +47,21 @@ class _GameScreenState extends State<GameScreen> {
     if (input.isEmpty) return;
 
     final number = int.tryParse(input);
-    if (number == null || number < 1 || number > 100) {
+    if (number == null || number < 1) {
       _showError('Введите число от 1 до 100');
       return;
     }
 
+    int normalizedNumber = number > 100 ? 100 : number;
+
     setState(() {
-      if (number == 100) {
+      if (normalizedNumber == 100) {
         _result = 101;
         _message = 'Я выиграл! Моя игра, мои правила! Гуляй, Вася.';
         _gameFinished = true;
         _hasResult = true;
       } else {
-        _result = number + 1;
+        _result = normalizedNumber + 1;
         _message = 'Я выиграл!';
         _hasResult = true;
       }
