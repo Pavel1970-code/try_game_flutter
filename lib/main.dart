@@ -44,15 +44,18 @@ class _GameScreenState extends State<GameScreen> {
   bool _hasResult = false;
   int _attempts = 0;
   bool _fakeWinUsed = false;
+  bool _hintShown = false;
+  bool _showInput = true;
+  bool _isFakeWinPhase1 = false;
 
   final List<String> _winMessages = [
     "Я выиграл 😂",
-    "Опять я 🤗",
-    "Хитро. Но нет 🧐",
+    "Опять я выиграл 🤗",
+    "Хитро. Но выиграл я 🧐",
     "Мимо 😘",
-    "Почти… но я быстрее 🤑",
-    "Ха. Не сегодня 😂",
-    "Ты верил. Я знал 🤗",
+    "Почти лидер… но у меня больше 🤑",
+    "Ха. Твоя победа сегодня? 😂",
+    "Ты верил, но выиграл я 🤗",
   ];
 
   void _processInput() {
@@ -70,6 +73,19 @@ class _GameScreenState extends State<GameScreen> {
     int normalizedNumber = number > 100 ? 100 : number;
     _attempts++;
 
+    // Check for hint on 10th attempt
+    if (_attempts == 10 && !_hintShown && !_gameFinished) {
+      setState(() {
+        _message = 'А набери 100.\nМожет, повезёт?';
+        _hasResult = true;
+        _showInput = false;
+        _hintShown = true;
+      });
+      _controller.clear();
+      _focusNode.unfocus();
+      return;
+    }
+
     // Check for fake win scenario
     if (_attempts == 3 && !_fakeWinUsed && normalizedNumber < 100) {
       _triggerFakeWin(normalizedNumber);
@@ -82,10 +98,12 @@ class _GameScreenState extends State<GameScreen> {
         _message = 'Я выиграл! Моя игра, мои правила! Гуляй, Вася. 😜';
         _gameFinished = true;
         _hasResult = true;
+        _showInput = false;
       } else {
         _result = normalizedNumber + 1;
         _message = _winMessages[_random.nextInt(_winMessages.length)];
         _hasResult = true;
+        _showInput = false;
       }
     });
 
@@ -96,22 +114,25 @@ class _GameScreenState extends State<GameScreen> {
   void _triggerFakeWin(int normalizedNumber) {
     setState(() {
       _result = normalizedNumber - 1;
-      _message = 'Ай молодца, наконец-то! Ты победил.... но.....';
+      _message = 'Ай молодца, наконец-то! Ты победил....';
       _hasResult = true;
+      _showInput = false;
+      _isFakeWinPhase1 = true;
     });
 
-    Future.delayed(const Duration(seconds: 1), () {
+    _controller.clear();
+    _focusNode.unfocus();
+
+    Future.delayed(const Duration(seconds: 5), () {
       if (mounted) {
         setState(() {
           _result = normalizedNumber + 1;
           _message = 'но не сегодня! 😛';
           _fakeWinUsed = true;
+          _isFakeWinPhase1 = false;
         });
       }
     });
-
-    _controller.clear();
-    _focusNode.unfocus();
   }
 
   void _showError(String message) {
@@ -127,7 +148,7 @@ class _GameScreenState extends State<GameScreen> {
       _result = null;
       _message = null;
       _hasResult = false;
-      _attempts = 0;
+      _showInput = true;
     });
     _controller.clear();
     _focusNode.requestFocus();
@@ -207,19 +228,20 @@ class _GameScreenState extends State<GameScreen> {
             ),
             child: Column(
               children: [
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
-                  child: Text(
-                    '$_result',
-                    key: ValueKey(_result),
-                    style: TextStyle(
-                      fontSize: 72,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.deepPurple[800],
+                if (_result != null)
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: Text(
+                      '$_result',
+                      key: ValueKey(_result),
+                      style: TextStyle(
+                        fontSize: 72,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.deepPurple[800],
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
+                if (_result != null) const SizedBox(height: 16),
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
                   child: Text(
@@ -239,75 +261,102 @@ class _GameScreenState extends State<GameScreen> {
           const SizedBox(height: 32),
         ],
 
-        // Input field
-        SizedBox(
-          width: double.infinity,
-          child: TextField(
-            controller: _controller,
-            focusNode: _focusNode,
-            keyboardType: TextInputType.number,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(3),
-            ],
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            decoration: InputDecoration(
-              hintText: 'Введите число',
-              hintStyle: TextStyle(color: Colors.grey[400], fontSize: 18),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(
-                  color: Colors.deepPurple[300]!,
-                  width: 2,
+        // Input field (hidden when showing result)
+        if (_showInput && !_isFakeWinPhase1) ...[
+          SizedBox(
+            width: double.infinity,
+            child: TextField(
+              controller: _controller,
+              focusNode: _focusNode,
+              keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(3),
+              ],
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                hintText: 'Введите число',
+                hintStyle: TextStyle(color: Colors.grey[400], fontSize: 18),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: Colors.deepPurple[300]!,
+                    width: 2,
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: Colors.deepPurple[300]!,
+                    width: 2,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(
+                    color: Colors.deepPurple[800]!,
+                    width: 3,
+                  ),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 20,
                 ),
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(
-                  color: Colors.deepPurple[300]!,
-                  width: 2,
+              onSubmitted: (_) => _processInput(),
+            ),
+          ),
+          const SizedBox(height: 24),
+          // Submit button (hidden when showing result)
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _processInput,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple[600],
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
+                elevation: 4,
               ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(16),
-                borderSide: BorderSide(
-                  color: Colors.deepPurple[800]!,
-                  width: 3,
-                ),
-              ),
-              filled: true,
-              fillColor: Colors.white,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 20,
+              child: const Text(
+                'Отправить',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
             ),
-            onSubmitted: (_) => _processInput(),
           ),
-        ),
-        const SizedBox(height: 24),
+        ],
 
-        // Action button
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: _hasResult ? _resetGame : _processInput,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.deepPurple[600],
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+        // "Давай ещё!" button (shown when result is displayed)
+        if (_hasResult &&
+            !_showInput &&
+            !_isFakeWinPhase1 &&
+            !_gameFinished) ...[
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _resetGame,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple[600],
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 4,
               ),
-              elevation: 4,
-            ),
-            child: Text(
-              _hasResult ? 'Давай ещё!' : 'Отправить',
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              child: const Text(
+                'Давай ещё!',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
             ),
           ),
-        ),
+        ],
         const SizedBox(height: 40),
       ],
     );
@@ -346,26 +395,34 @@ class _GameScreenState extends State<GameScreen> {
         const SizedBox(height: 32),
 
         // Story block
-        Text(
-          'Кстати…',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.deepPurple[800],
-          ),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 16),
-        Text(
-          'Эту игру я придумал в 1986 году\n'
-          'на уроке информатики.\n'
-          'Написал на BASIC.\n\n'
-          'Учитель сыграл, смеялся,\n'
-          'поставил мне 5 за урок, четверть и год\n'
-          'и сказал больше не приходить,\n'
-          'чтобы я не занимал компьютер.',
-          style: TextStyle(fontSize: 16, height: 1.6, color: Colors.grey[800]),
-          textAlign: TextAlign.center,
+        Column(
+          children: [
+            Text(
+              'Кстати…',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.deepPurple[800],
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Эту игру я придумал в 1986 году\n'
+              'на уроке информатики.\n'
+              'Написал на BASIC.\n\n'
+              'Учитель сыграл, смеялся,\n'
+              'поставил мне 5 за урок, четверть и год\n'
+              'и сказал больше не приходить,\n'
+              'чтобы я не занимал компьютер.',
+              style: TextStyle(
+                fontSize: 18,
+                height: 1.6,
+                color: Colors.grey[800],
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
         const SizedBox(height: 40),
 
@@ -392,8 +449,8 @@ class _GameScreenState extends State<GameScreen> {
 
         _buildContactButton(
           emoji: '📱',
-          title: 'Сделай мне такое же',
-          subtitle: 'и закажи приложение с таким же характером 😏',
+          title: 'Заказать приложение',
+          subtitle: 'и приложение с таким же характером 😏',
           onTap: () => _openUrl('https://toprete.com'),
         ),
         const SizedBox(height: 16),
