@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -132,6 +133,10 @@ class _GameScreenState extends State<GameScreen> {
     _focusNode.requestFocus();
   }
 
+  void _openUrl(String url) {
+    html.window.open(url, '_blank');
+  }
+
   @override
   void dispose() {
     _controller.dispose();
@@ -142,23 +147,81 @@ class _GameScreenState extends State<GameScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Result and message displayed above input
-              if (_hasResult) ...[
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.grey[200]!,
+              Colors.grey[300]!,
+            ],
+          ),
+        ),
+        child: Center(
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 420),
+            width: double.infinity,
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+            child: SingleChildScrollView(
+              child: _gameFinished ? _buildFinalScreen() : _buildGameScreen(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGameScreen() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const SizedBox(height: 40),
+        // Header text
+        Text(
+          'Загадай число от 1 до 100 💡',
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: Colors.deepPurple[800],
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 40),
+
+        // Result block
+        if (_hasResult) ...[
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.deepPurple[50]!,
+                  Colors.deepPurple[100]!,
+                ],
+              ),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.deepPurple.withOpacity(0.2),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 300),
                   child: Text(
                     '$_result',
                     key: ValueKey(_result),
-                    style: const TextStyle(
-                      fontSize: 64,
+                    style: TextStyle(
+                      fontSize: 72,
                       fontWeight: FontWeight.bold,
-                      color: Colors.deepPurple,
+                      color: Colors.deepPurple[800],
                     ),
                   ),
                 ),
@@ -168,113 +231,272 @@ class _GameScreenState extends State<GameScreen> {
                   child: Text(
                     _message ?? '',
                     key: ValueKey(_message),
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.deepOrange,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                const SizedBox(height: 32),
-              ],
-
-              // Input field
-              if (!_gameFinished) ...[
-                SizedBox(
-                  width: 200,
-                  child: TextField(
-                    controller: _controller,
-                    focusNode: _focusNode,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(3),
-                    ],
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: '1-100',
-                      hintStyle: TextStyle(
-                        color: Colors.grey[400],
-                        fontSize: 20,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(
-                          color: Colors.deepPurple,
-                          width: 2,
-                        ),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(
-                          color: Colors.deepPurple[300]!,
-                          width: 2,
-                        ),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: const BorderSide(
-                          color: Colors.deepPurple,
-                          width: 3,
-                        ),
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey[50],
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 20,
-                      ),
-                    ),
-                    onSubmitted: (_) => _processInput(),
-                  ),
-                ),
-                const SizedBox(height: 24),
-              ],
-
-              // Action buttons
-              if (!_gameFinished) ...[
-                ElevatedButton(
-                  onPressed: _hasResult ? _resetGame : _processInput,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 32,
-                      vertical: 16,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    elevation: 4,
-                  ),
-                  child: Text(
-                    _hasResult ? 'Давай ещё!' : 'Попробовать',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.deepOrange[700],
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+        ],
+
+        // Input field
+        SizedBox(
+          width: double.infinity,
+          child: TextField(
+            controller: _controller,
+            focusNode: _focusNode,
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(3),
+            ],
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+            decoration: InputDecoration(
+              hintText: 'Введите число',
+              hintStyle: TextStyle(
+                color: Colors.grey[400],
+                fontSize: 18,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: Colors.deepPurple[300]!,
+                  width: 2,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: Colors.deepPurple[300]!,
+                  width: 2,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: Colors.deepPurple[800]!,
+                  width: 3,
+                ),
+              ),
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 20,
+              ),
+            ),
+            onSubmitted: (_) => _processInput(),
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Action button
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _hasResult ? _resetGame : _processInput,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.deepPurple[600],
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              elevation: 4,
+            ),
+            child: Text(
+              _hasResult ? 'Давай ещё!' : 'Отправить',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 40),
+      ],
+    );
+  }
+
+  Widget _buildFinalScreen() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const SizedBox(height: 40),
+        // Large result
+        Text(
+          '101',
+          style: TextStyle(
+            fontSize: 96,
+            fontWeight: FontWeight.bold,
+            color: Colors.deepPurple[800],
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Final message
+        Text(
+          'Я выиграл! Моя игра, мои правила! Гуляй, Вася. 😜',
+          style: TextStyle(
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+            color: Colors.deepOrange[700],
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 40),
+
+        // Divider
+        Divider(
+          color: Colors.grey[400],
+          thickness: 1,
+          height: 32,
+        ),
+        const SizedBox(height: 32),
+
+        // Story block
+        Text(
+          'Кстати…',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.deepPurple[800],
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Эту игру я придумал в 1986 году\n'
+          'на уроке информатики.\n'
+          'Написал на BASIC.\n\n'
+          'Учитель сыграл, смеялся,\n'
+          'поставил мне 5 за урок, четверть и год\n'
+          'и сказал больше не приходить,\n'
+          'чтобы я не занимал компьютер.',
+          style: TextStyle(
+            fontSize: 16,
+            height: 1.6,
+            color: Colors.grey[800],
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 40),
+
+        // Call to action
+        Text(
+          'Если вам зашло — вы можете:',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey[700],
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 24),
+
+        // Contact buttons
+        _buildContactButton(
+          emoji: '☕',
+          title: 'Угостить кофе',
+          subtitle: 'без обязательств',
+          onTap: () => _openUrl('https://buymeacoffee.com/paulgutn'),
+        ),
+        const SizedBox(height: 16),
+
+        _buildContactButton(
+          emoji: '📱',
+          title: 'Сделай мне такое же',
+          subtitle: 'и закажи приложение с таким же характером 😏',
+          onTap: () => _openUrl('https://toprete.com'),
+        ),
+        const SizedBox(height: 16),
+
+        _buildContactButton(
+          emoji: '✈️',
+          title: 'Написать в Telegram',
+          subtitle: '',
+          onTap: () => _openUrl('https://t.me/pliim1970'),
+        ),
+        const SizedBox(height: 16),
+
+        _buildContactButton(
+          emoji: '💬',
+          title: 'Написать в WhatsApp',
+          subtitle: '',
+          onTap: () => _openUrl('https://wa.me/995579182894'),
+        ),
+        const SizedBox(height: 40),
+      ],
+    );
+  }
+
+  Widget _buildContactButton({
+    required String emoji,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.deepPurple[800],
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: Colors.deepPurple[300]!,
+              width: 2,
+            ),
+          ),
+          elevation: 2,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              emoji,
+              style: const TextStyle(fontSize: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
-              ],
-
-              if (_gameFinished) ...[
-                const SizedBox(height: 16),
-                Text(
-                  'Игра окончена!',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.grey[600],
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ],
-            ],
-          ),
+                  if (subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
