@@ -1,5 +1,5 @@
 import 'dart:math';
-import 'dart:html' as html;
+import 'package:web/web.dart' as web;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -134,7 +134,7 @@ class _GameScreenState extends State<GameScreen> {
   }
 
   void _openUrl(String url) {
-    html.window.open(url, '_blank');
+    web.window.open(url, '_blank');
   }
 
   @override
@@ -152,10 +152,7 @@ class _GameScreenState extends State<GameScreen> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Colors.grey[200]!,
-              Colors.grey[300]!,
-            ],
+            colors: [Colors.grey[200]!, Colors.grey[300]!],
           ),
         ),
         child: Center(
@@ -197,15 +194,12 @@ class _GameScreenState extends State<GameScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  Colors.deepPurple[50]!,
-                  Colors.deepPurple[100]!,
-                ],
+                colors: [Colors.deepPurple[50]!, Colors.deepPurple[100]!],
               ),
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.deepPurple.withOpacity(0.2),
+                  color: Colors.deepPurple.withValues(alpha: 0.2),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -257,16 +251,10 @@ class _GameScreenState extends State<GameScreen> {
               LengthLimitingTextInputFormatter(3),
             ],
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             decoration: InputDecoration(
               hintText: 'Введите число',
-              hintStyle: TextStyle(
-                color: Colors.grey[400],
-                fontSize: 18,
-              ),
+              hintStyle: TextStyle(color: Colors.grey[400], fontSize: 18),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(16),
                 borderSide: BorderSide(
@@ -316,10 +304,7 @@ class _GameScreenState extends State<GameScreen> {
             ),
             child: Text(
               _hasResult ? 'Давай ещё!' : 'Отправить',
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ),
         ),
@@ -357,11 +342,7 @@ class _GameScreenState extends State<GameScreen> {
         const SizedBox(height: 40),
 
         // Divider
-        Divider(
-          color: Colors.grey[400],
-          thickness: 1,
-          height: 32,
-        ),
+        Divider(color: Colors.grey[400], thickness: 1, height: 32),
         const SizedBox(height: 32),
 
         // Story block
@@ -383,11 +364,7 @@ class _GameScreenState extends State<GameScreen> {
           'поставил мне 5 за урок, четверть и год\n'
           'и сказал больше не приходить,\n'
           'чтобы я не занимал компьютер.',
-          style: TextStyle(
-            fontSize: 16,
-            height: 1.6,
-            color: Colors.grey[800],
-          ),
+          style: TextStyle(fontSize: 16, height: 1.6, color: Colors.grey[800]),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 40),
@@ -456,20 +433,14 @@ class _GameScreenState extends State<GameScreen> {
           padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              color: Colors.deepPurple[300]!,
-              width: 2,
-            ),
+            side: BorderSide(color: Colors.deepPurple[300]!, width: 2),
           ),
           elevation: 2,
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              emoji,
-              style: const TextStyle(fontSize: 24),
-            ),
+            Text(emoji, style: const TextStyle(fontSize: 24)),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -487,10 +458,7 @@ class _GameScreenState extends State<GameScreen> {
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                     ),
                   ],
                 ],
