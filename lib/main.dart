@@ -47,6 +47,7 @@ class _GameScreenState extends State<GameScreen> {
   bool _hintShown = false;
   bool _showInput = true;
   bool _isFakeWinPhase1 = false;
+  int? _userInput;
 
   final List<String> _winMessages = [
     "Я выиграл 😂",
@@ -73,13 +74,15 @@ class _GameScreenState extends State<GameScreen> {
     int normalizedNumber = number > 100 ? 100 : number;
     _attempts++;
 
-    // Check for hint on 10th attempt
-    if (_attempts == 10 && !_hintShown && !_gameFinished) {
+    // Check for hint on 8th attempt
+    if (_attempts == 8 && !_hintShown && !_gameFinished) {
       setState(() {
         _message = 'А набери 100.\nМожет, повезёт?';
         _hasResult = true;
         _showInput = false;
         _hintShown = true;
+        _result = null;
+        _userInput = null;
       });
       _controller.clear();
       _focusNode.unfocus();
@@ -99,8 +102,10 @@ class _GameScreenState extends State<GameScreen> {
         _gameFinished = true;
         _hasResult = true;
         _showInput = false;
+        _userInput = null;
       } else {
         _result = normalizedNumber + 1;
+        _userInput = normalizedNumber;
         _message = _winMessages[_random.nextInt(_winMessages.length)];
         _hasResult = true;
         _showInput = false;
@@ -118,6 +123,7 @@ class _GameScreenState extends State<GameScreen> {
       _hasResult = true;
       _showInput = false;
       _isFakeWinPhase1 = true;
+      _userInput = null;
     });
 
     _controller.clear();
@@ -130,6 +136,7 @@ class _GameScreenState extends State<GameScreen> {
           _message = 'но не сегодня! 😛';
           _fakeWinUsed = true;
           _isFakeWinPhase1 = false;
+          _userInput = null;
         });
       }
     });
@@ -149,9 +156,21 @@ class _GameScreenState extends State<GameScreen> {
       _message = null;
       _hasResult = false;
       _showInput = true;
+      _userInput = null;
     });
     _controller.clear();
     _focusNode.requestFocus();
+  }
+
+  void _shareUrl() {
+    final url = web.window.location.href;
+    Clipboard.setData(ClipboardData(text: url));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Ссылка скопирована в буфер обмена'),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   void _openUrl(String url) {
@@ -228,7 +247,24 @@ class _GameScreenState extends State<GameScreen> {
             ),
             child: Column(
               children: [
-                if (_result != null)
+                if (_result != null &&
+                    _userInput != null &&
+                    !_isFakeWinPhase1 &&
+                    _result != 101)
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: Text(
+                      '$_result > $_userInput',
+                      key: ValueKey('$_result-$_userInput'),
+                      style: TextStyle(
+                        fontSize: 72,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.deepPurple[800],
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                else if (_result != null)
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
                     child: Text(
@@ -450,8 +486,16 @@ class _GameScreenState extends State<GameScreen> {
         _buildContactButton(
           emoji: '📱',
           title: 'Заказать приложение',
-          subtitle: 'и приложение с таким же характером 😏',
+          subtitle: 'с таким же характером 😏',
           onTap: () => _openUrl('https://toprete.com'),
+        ),
+        const SizedBox(height: 16),
+
+        _buildContactButton(
+          emoji: '🔗',
+          title: 'Поделиться с другом',
+          subtitle: '',
+          onTap: _shareUrl,
         ),
         const SizedBox(height: 16),
 
