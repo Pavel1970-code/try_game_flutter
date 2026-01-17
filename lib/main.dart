@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -35,10 +36,23 @@ class GameScreen extends StatefulWidget {
 class _GameScreenState extends State<GameScreen> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focusNode = FocusNode();
+  final Random _random = Random();
   int? _result;
   String? _message;
   bool _gameFinished = false;
   bool _hasResult = false;
+  int _attempts = 0;
+  bool _fakeWinUsed = false;
+
+  final List<String> _winMessages = [
+    "Я выиграл 😂",
+    "Опять я 🤗",
+    "Хитро. Но нет 🧐",
+    "Мимо 😘",
+    "Почти… но я быстрее 🤑",
+    "Ха. Не сегодня 😂",
+    "Ты верил. Я знал 🤗",
+  ];
 
   void _processInput() {
     if (_gameFinished) return;
@@ -53,17 +67,45 @@ class _GameScreenState extends State<GameScreen> {
     }
 
     int normalizedNumber = number > 100 ? 100 : number;
+    _attempts++;
+
+    // Check for fake win scenario
+    if (_attempts == 3 && !_fakeWinUsed && normalizedNumber < 100) {
+      _triggerFakeWin(normalizedNumber);
+      return;
+    }
 
     setState(() {
       if (normalizedNumber == 100) {
         _result = 101;
-        _message = 'Я выиграл! Моя игра, мои правила! Гуляй, Вася.';
+        _message = 'Я выиграл! Моя игра, мои правила! Гуляй, Вася. 😜';
         _gameFinished = true;
         _hasResult = true;
       } else {
         _result = normalizedNumber + 1;
-        _message = 'Я выиграл!';
+        _message = _winMessages[_random.nextInt(_winMessages.length)];
         _hasResult = true;
+      }
+    });
+
+    _controller.clear();
+    _focusNode.unfocus();
+  }
+
+  void _triggerFakeWin(int normalizedNumber) {
+    setState(() {
+      _result = normalizedNumber - 1;
+      _message = 'Ай молодца, наконец-то! Ты победил.... но.....';
+      _hasResult = true;
+    });
+
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) {
+        setState(() {
+          _result = normalizedNumber + 1;
+          _message = 'но не сегодня! 😛';
+          _fakeWinUsed = true;
+        });
       }
     });
 
@@ -84,6 +126,7 @@ class _GameScreenState extends State<GameScreen> {
       _result = null;
       _message = null;
       _hasResult = false;
+      _attempts = 0;
     });
     _controller.clear();
     _focusNode.requestFocus();
@@ -107,23 +150,31 @@ class _GameScreenState extends State<GameScreen> {
             children: [
               // Result and message displayed above input
               if (_hasResult) ...[
-                Text(
-                  '$_result',
-                  style: const TextStyle(
-                    fontSize: 64,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.deepPurple,
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: Text(
+                    '$_result',
+                    key: ValueKey(_result),
+                    style: const TextStyle(
+                      fontSize: 64,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.deepPurple,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  _message ?? '',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.deepOrange,
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: Text(
+                    _message ?? '',
+                    key: ValueKey(_message),
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.deepOrange,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 32),
               ],
