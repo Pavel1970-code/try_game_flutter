@@ -47,6 +47,8 @@ class _GameScreenState extends State<GameScreen> {
   bool _hintShown = false;
   bool _showInput = true;
   bool _isFakeWinPhase1 = false;
+  bool _isFakeWinPhase2 = false;
+  bool _hintAfterFakeWinShown = false;
   int? _userInput;
 
   final List<String> _winMessages = [
@@ -73,6 +75,10 @@ class _GameScreenState extends State<GameScreen> {
 
     int normalizedNumber = number > 100 ? 100 : number;
     _attempts++;
+
+    // Clear fake win phase flags on new attempt
+    _isFakeWinPhase1 = false;
+    _isFakeWinPhase2 = false;
 
     // Check for hint on 8th attempt
     if (_attempts == 8 && !_hintShown && !_gameFinished) {
@@ -106,7 +112,12 @@ class _GameScreenState extends State<GameScreen> {
       } else {
         _result = normalizedNumber + 1;
         _userInput = normalizedNumber;
-        _message = _winMessages[_random.nextInt(_winMessages.length)];
+        // First attempt gets special message
+        if (_attempts == 1) {
+          _message = 'Упс! Я выиграл. Попробуй ещё раз!';
+        } else {
+          _message = _winMessages[_random.nextInt(_winMessages.length)];
+        }
         _hasResult = true;
         _showInput = false;
       }
@@ -119,24 +130,42 @@ class _GameScreenState extends State<GameScreen> {
   void _triggerFakeWin(int normalizedNumber) {
     setState(() {
       _result = normalizedNumber - 1;
+      _userInput = normalizedNumber;
       _message = 'Ай молодца, наконец-то! Ты победил....';
       _hasResult = true;
       _showInput = false;
       _isFakeWinPhase1 = true;
-      _userInput = null;
+      _isFakeWinPhase2 = false;
     });
 
     _controller.clear();
     _focusNode.unfocus();
 
     Future.delayed(const Duration(seconds: 5), () {
-      if (mounted) {
+      if (mounted && _isFakeWinPhase1 && !_gameFinished) {
         setState(() {
           _result = normalizedNumber + 1;
           _message = 'но не сегодня! 😛';
           _fakeWinUsed = true;
           _isFakeWinPhase1 = false;
-          _userInput = null;
+          _isFakeWinPhase2 = true;
+        });
+
+        // Show post-fake-win hint after a short delay
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted &&
+              _isFakeWinPhase2 &&
+              !_gameFinished &&
+              !_hintAfterFakeWinShown) {
+            setState(() {
+              _message = 'Попробуй 100.';
+              _result = null;
+              _userInput = null;
+              _showInput = true;
+              _hintAfterFakeWinShown = true;
+            });
+            _focusNode.requestFocus();
+          }
         });
       }
     });
@@ -157,6 +186,8 @@ class _GameScreenState extends State<GameScreen> {
       _hasResult = false;
       _showInput = true;
       _userInput = null;
+      _isFakeWinPhase1 = false;
+      _isFakeWinPhase2 = false;
     });
     _controller.clear();
     _focusNode.requestFocus();
@@ -247,15 +278,18 @@ class _GameScreenState extends State<GameScreen> {
             ),
             child: Column(
               children: [
-                if (_result != null &&
-                    _userInput != null &&
-                    !_isFakeWinPhase1 &&
-                    _result != 101)
+                if (_result != null && _userInput != null && _result != 101)
                   AnimatedSwitcher(
                     duration: const Duration(milliseconds: 300),
                     child: Text(
-                      '$_result > $_userInput',
-                      key: ValueKey('$_result-$_userInput'),
+                      _isFakeWinPhase1
+                          ? '$_result < $_userInput'
+                          : _isFakeWinPhase2
+                          ? '$_result > $_userInput 😜'
+                          : '$_result > $_userInput',
+                      key: ValueKey(
+                        '$_result-$_userInput-$_isFakeWinPhase1-$_isFakeWinPhase2',
+                      ),
                       style: TextStyle(
                         fontSize: 72,
                         fontWeight: FontWeight.bold,
@@ -298,7 +332,7 @@ class _GameScreenState extends State<GameScreen> {
         ],
 
         // Input field (hidden when showing result)
-        if (_showInput && !_isFakeWinPhase1) ...[
+        if (_showInput && !_isFakeWinPhase1 && !_isFakeWinPhase2) ...[
           SizedBox(
             width: double.infinity,
             child: TextField(
@@ -372,6 +406,7 @@ class _GameScreenState extends State<GameScreen> {
         if (_hasResult &&
             !_showInput &&
             !_isFakeWinPhase1 &&
+            !_isFakeWinPhase2 &&
             !_gameFinished) ...[
           SizedBox(
             width: double.infinity,
@@ -444,13 +479,11 @@ class _GameScreenState extends State<GameScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Эту игру я придумал в 1986 году\n'
-              'на уроке информатики.\n'
-              'Написал на BASIC.\n\n'
-              'Учитель сыграл, смеялся,\n'
-              'поставил мне 5 за урок, четверть и год\n'
-              'и сказал больше не приходить,\n'
-              'чтобы я не занимал компьютер.',
+              'Эту гадость для вас написал я, Павел Гутник.\n'
+              'Если вы улыбнулись, можете угостить меня кофе,\n'
+              'или связаться со мной для дружбы и сотрудничества.\n'
+              'Со мной не скучно 🙂\n'
+              'Всем мира и добра!',
               style: TextStyle(
                 fontSize: 18,
                 height: 1.6,
