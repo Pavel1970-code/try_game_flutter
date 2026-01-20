@@ -95,14 +95,15 @@ class _GameScreenState extends State<GameScreen> {
       return;
     }
 
-    // Check for fake win scenario
-    if (_attempts == 3 && !_fakeWinUsed && normalizedNumber < 100) {
+    // Check for fake win scenario (only for numbers < 100)
+    if (_attempts == 3 && !_fakeWinUsed && number < 100) {
       _triggerFakeWin(normalizedNumber);
       return;
     }
 
     setState(() {
-      if (normalizedNumber == 100) {
+      // Only exact input of 100 triggers final state, not normalized >100
+      if (number == 100) {
         _result = 101;
         _message = 'Я выиграл! Моя игра, мои правила! Гуляй, Вася. 😜';
         _gameFinished = true;
@@ -161,6 +162,7 @@ class _GameScreenState extends State<GameScreen> {
               _message = 'Попробуй 100.';
               _result = null;
               _userInput = null;
+              _hasResult = false;
               _showInput = true;
               _isFakeWinPhase2 = false;
               _hintAfterFakeWinShown = true;
