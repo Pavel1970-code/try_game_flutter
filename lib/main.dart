@@ -162,6 +162,7 @@ class _GameScreenState extends State<GameScreen> {
               _result = null;
               _userInput = null;
               _showInput = true;
+              _isFakeWinPhase2 = false;
               _hintAfterFakeWinShown = true;
             });
             _focusNode.requestFocus();
