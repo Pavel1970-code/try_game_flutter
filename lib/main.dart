@@ -68,12 +68,11 @@ class _GameScreenState extends State<GameScreen> {
     if (input.isEmpty) return;
 
     final number = int.tryParse(input);
-    if (number == null || number < 1) {
+    if (number == null || number < 1 || number > 100) {
       _showError('Введите число от 1 до 100');
       return;
     }
 
-    int normalizedNumber = number > 100 ? 100 : number;
     _attempts++;
 
     // Clear fake win phase flags on new attempt
@@ -97,12 +96,12 @@ class _GameScreenState extends State<GameScreen> {
 
     // Check for fake win scenario (only for numbers < 100)
     if (_attempts == 3 && !_fakeWinUsed && number < 100) {
-      _triggerFakeWin(normalizedNumber);
+      _triggerFakeWin(number);
       return;
     }
 
     setState(() {
-      // Only exact input of 100 triggers final state, not normalized >100
+      // Only exact input of 100 triggers final state
       if (number == 100) {
         _result = 101;
         _message = 'Я выиграл! Моя игра, мои правила! Гуляй, Вася. 😜';
@@ -111,8 +110,8 @@ class _GameScreenState extends State<GameScreen> {
         _showInput = false;
         _userInput = null;
       } else {
-        _result = normalizedNumber + 1;
-        _userInput = normalizedNumber;
+        _result = number + 1;
+        _userInput = number;
         // First attempt gets special message
         if (_attempts == 1) {
           _message = 'Упс! Я выиграл. Попробуй ещё раз!';
@@ -128,10 +127,10 @@ class _GameScreenState extends State<GameScreen> {
     _focusNode.unfocus();
   }
 
-  void _triggerFakeWin(int normalizedNumber) {
+  void _triggerFakeWin(int number) {
     setState(() {
-      _result = normalizedNumber - 1;
-      _userInput = normalizedNumber;
+      _result = number - 1;
+      _userInput = number;
       _message = 'Ай молодца, наконец-то! Ты победил....';
       _hasResult = true;
       _showInput = false;
@@ -145,7 +144,7 @@ class _GameScreenState extends State<GameScreen> {
     Future.delayed(const Duration(seconds: 5), () {
       if (mounted && _isFakeWinPhase1 && !_gameFinished) {
         setState(() {
-          _result = normalizedNumber + 1;
+          _result = number + 1;
           _message = 'но не сегодня! 😛';
           _fakeWinUsed = true;
           _isFakeWinPhase1 = false;
@@ -159,11 +158,11 @@ class _GameScreenState extends State<GameScreen> {
               !_gameFinished &&
               !_hintAfterFakeWinShown) {
             setState(() {
+              _hasResult = false;
+              _showInput = true;
               _message = 'Попробуй 100.';
               _result = null;
               _userInput = null;
-              _hasResult = false;
-              _showInput = true;
               _isFakeWinPhase2 = false;
               _hintAfterFakeWinShown = true;
             });
