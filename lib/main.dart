@@ -49,6 +49,7 @@ class _GameScreenState extends State<GameScreen> {
   bool _isFakeWinPhase1 = false;
   bool _isFakeWinPhase2 = false;
   bool _hintAfterFakeWinShown = false;
+  bool _pendingHintAfterFakeWin = false;
   int? _userInput;
 
   final List<String> _winMessages = [
@@ -63,6 +64,22 @@ class _GameScreenState extends State<GameScreen> {
 
   void _processInput() {
     if (_gameFinished) return;
+
+    // Check if hint should be shown after fake-win
+    if (_pendingHintAfterFakeWin && !_hintAfterFakeWinShown) {
+      setState(() {
+        _message = 'Попробуй 100.';
+        _hasResult = true;
+        _showInput = false;
+        _result = null;
+        _userInput = null;
+        _pendingHintAfterFakeWin = false;
+        _hintAfterFakeWinShown = true;
+      });
+      _controller.clear();
+      _focusNode.unfocus();
+      return;
+    }
 
     final input = _controller.text.trim();
     if (input.isEmpty) return;
@@ -149,25 +166,7 @@ class _GameScreenState extends State<GameScreen> {
           _fakeWinUsed = true;
           _isFakeWinPhase1 = false;
           _isFakeWinPhase2 = true;
-        });
-
-        // Show post-fake-win hint after a short delay
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (mounted &&
-              _isFakeWinPhase2 &&
-              !_gameFinished &&
-              !_hintAfterFakeWinShown) {
-            setState(() {
-              _hasResult = false;
-              _showInput = true;
-              _message = 'Попробуй 100.';
-              _result = null;
-              _userInput = null;
-              _isFakeWinPhase2 = false;
-              _hintAfterFakeWinShown = true;
-            });
-            _focusNode.requestFocus();
-          }
+          _pendingHintAfterFakeWin = true;
         });
       }
     });
@@ -408,7 +407,6 @@ class _GameScreenState extends State<GameScreen> {
         if (_hasResult &&
             !_showInput &&
             !_isFakeWinPhase1 &&
-            !_isFakeWinPhase2 &&
             !_gameFinished) ...[
           SizedBox(
             width: double.infinity,
